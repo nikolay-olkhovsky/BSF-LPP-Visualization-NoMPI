@@ -15,7 +15,8 @@ void PC_bsf_Start(
 	bool* success
 );
 void PC_bsf_Init(
-	bool* success
+	bool* success,
+	PT_bsf_parameter_T* parameter
 );
 void PC_bsf_IterOutput(
 	PT_bsf_reduceElem_T* reduceResult, 

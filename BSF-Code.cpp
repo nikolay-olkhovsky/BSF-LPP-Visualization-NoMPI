@@ -67,9 +67,11 @@ static void BC_Master() {// The head function of the master process.
 	do {
 		if (BD_jobCase == BD_JOB_RESET || BD_newJobCase == BD_JOB_RESET) {			// Init data on Master
 			// Master of NoMPI version is reset in BC_WorkerReduce()
+			if (BD_jobCase != BD_JOB_RESET)
+				PC_bsf_ProblemOutput(&BD_extendedReduceResult_P->elem, BD_extendedReduceResult_P->reduceCounter, BD_order.parameter, BD_t);
 			cout << ": RESET job started!" << endl;
 			BD_success = true;
-			//PC_bsf_Init(&BD_success);
+			//PC_bsf_Init(&BD_success, &(BD_order.parameter));
 			//if (!BD_success) {
 			//	cout << "Error on Master: PC_bsf_Init failed!" << endl;
 			//	BD_exit = BD_EXIT;
@@ -86,8 +88,8 @@ static void BC_Master() {// The head function of the master process.
 			//	//MPI_Finalize();
 			//	//exit(1);
 			//}
-			if(BD_jobCase != BD_JOB_RESET)
-				PC_bsf_ProblemOutput(&BD_extendedReduceResult_P->elem, BD_extendedReduceResult_P->reduceCounter, BD_order.parameter, BD_t);
+			//if(BD_jobCase != BD_JOB_RESET)
+			//	PC_bsf_ProblemOutput(&BD_extendedReduceResult_P->elem, BD_extendedReduceResult_P->reduceCounter, BD_order.parameter, BD_t);
 			BD_newJobCase = BD_JOB_RESET;
 			//BD_exit = BD_EXIT;
 			//break;
@@ -329,7 +331,7 @@ static bool BC_WorkerMap() { // Performs the Map function
 		// RESET initial data on workers
 		//cout << BD_rank << ": RESET signal recieved!" << endl;
 		success = true;
-		PC_bsf_Init(&success);
+		PC_bsf_Init(&success, &(BD_order.parameter));
 		if (!success)
 			cout << "Error on " << "worker" << ": PC_bsf_Init failed!" << endl;
 		BD_success = true;

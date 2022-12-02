@@ -11,6 +11,7 @@ This source code is a part of BSF Skeleton
 //=========================== BSF Types =========================
 struct PT_bsf_parameter_T {		// Type of Parameter for workers (current approximation)
 	PT_integer_T k;
+	int state;
 };
 
 struct PT_bsf_mapElem_T {		// Type of map-list elements

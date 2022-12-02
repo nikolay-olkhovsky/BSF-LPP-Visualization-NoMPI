@@ -78,7 +78,7 @@ void PC_bsf_Start(bool* success) {
 	}
 }
 
-void PC_bsf_Init(bool* success) {
+void PC_bsf_Init(bool* success,	PT_bsf_parameter_T* parameter) {
 	float buf;
 	int readNumber;
 	switch (PD_read_state) {

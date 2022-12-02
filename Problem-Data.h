@@ -19,6 +19,7 @@ static PT_integer_T		PD_tracesNumber;
 static PT_integer_T		PD_currentTrace;
 static PT_integer_T		PD_testSum;
 static PT_integer_T		PD_read_state;	// State of problem trace processing
+static bool				PD_initState;	// Flag to initial state when parameter is not set
 //========================== Problem data structures ==============================
 static PT_matrix_T PD_A;	// Matrix of the system Ax <= b
 static PT_column_T PD_b;	// Column of the constant terms of the system Ax <= b
