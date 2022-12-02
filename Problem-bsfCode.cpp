@@ -25,7 +25,7 @@ void PC_bsf_Start(bool* success) {
 	int packageSize = 0;
 	PD_id = 1;
 	PD_currentProblem = 0;
-	PD_read_state = PP_STATE_NEW_PROBLEM;
+	PD_initState = true;
 
 	PD_lppFilename = PP_PATH;
 	PD_lppFilename += PP_LPP_FILE;
@@ -81,6 +81,14 @@ void PC_bsf_Start(bool* success) {
 void PC_bsf_Init(bool* success,	PT_bsf_parameter_T* parameter) {
 	float buf;
 	int readNumber;
+
+	if (PD_initState) {
+		PD_read_state = PP_STATE_NEW_PROBLEM;
+		PD_initState = false;
+	}
+	else
+		PD_read_state = parameter->state;
+
 	switch (PD_read_state) {
 	case PP_STATE_NEW_PROBLEM:
 		if (fscanf(PD_stream_lppFile, "%d%d", &PD_m, &PD_n) == 0) {
@@ -264,11 +272,11 @@ void PC_bsf_ProcessResults(
 	parameter->k += 1;
 	if (parameter->k >= PD_K) {
 		if (PD_currentTrace < PD_tracesNumber - 1) {
-			PD_read_state = PP_STATE_NEW_POINT;
+			parameter->state = PP_STATE_NEW_POINT;
 			*nextJob = BD_JOB_RESET;
 		}
 		else if (PD_currentProblem < PD_problemsNumber) {
-			PD_read_state = PP_STATE_NEW_PROBLEM;
+			parameter->state = PP_STATE_NEW_PROBLEM;
 			*nextJob = BD_JOB_RESET;
 		}
 		else
