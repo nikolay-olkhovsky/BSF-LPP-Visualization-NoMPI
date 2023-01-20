@@ -62,10 +62,13 @@ A_m1 A_m2 ... A_mn b_m
 ...
 ------------ end of file----------------*/
 static FILE* PD_stream_outFile;
-static string PD_outFilename; /* OUT file in the following format:
+static string PD_outFilename;
+
+static FILE* PD_stream_retFile;
+static string PD_retFilename; /* OUT file in the following format:
 ------------ begin of file -------------
-numOfTraces
-m
-I_1 I_2 ... I_m
+numOfRetinas
+m n
+R_1 R_2 ... R_n
 ...
 ------------ end of file----------------*/

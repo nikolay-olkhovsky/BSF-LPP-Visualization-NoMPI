@@ -76,9 +76,27 @@ void PC_bsf_Start(bool* success) {
 		*success = false;
 		return;
 	}
+	
+	//--------------- Opening retina file ------------------
+	PD_retFilename = PP_PATH;
+	PD_retFilename += PP_RETINA_FILE;
+
+	PD_stream_retFile = fopen(PD_retFilename.c_str(), "w");
+	if (PD_stream_retFile == NULL) {
+		cout << '[' << BSF_sv_mpiRank << "]: Failure of opening file '" << PD_retFilename << "'.\n";
+		*success = false;
+		return;
+	}
+	if (fprintf(PD_stream_retFile, "%d\n", PD_problemsNumber) < 1) {
+		//
+		cout
+			<< "Can't write package size to " << PD_retFilename << endl;
+		*success = false;
+		return;
+	}
 }
 
-void PC_bsf_Init(bool* success,	PT_bsf_parameter_T* parameter) {
+void PC_bsf_Init(bool* success, PT_bsf_parameter_T* parameter) {
 	float buf;
 	int readNumber;
 
@@ -194,7 +212,7 @@ void PC_bsf_Init(bool* success,	PT_bsf_parameter_T* parameter) {
 #endif
 
 #ifdef PP_RECEPTIVE_FIELD_OUT
-	PD_field = new PT_float_T * [PD_K];
+	PD_field = new PT_float_T* [PD_K];
 #endif
 }
 
@@ -212,12 +230,14 @@ void PC_bsf_MapF(PT_bsf_mapElem_T* mapElem, PT_bsf_reduceElem_T* reduceElem, int
 	PT_vector_T target;
 	int i = mapElem->inequalityNo;
 	G(BSF_sv_parameter, PD_g);
-	targetProjection(i, PD_g, target);
-	if (dotproduct_Vector(PD_A[i], PD_c) > 0 && isInnerPoint(target)) {
-		reduceElem->objectiveDistance = objectiveDistance(target);
+	//targetProjection(i, PD_g, target);
+	if (dotproduct_Vector(PD_A[i], PD_c) > 0/* && isInnerPoint(target)*/) {
+	//if (i == 2) {
+		//reduceElem->objectiveDistance = objectiveDistance(target);
+		reduceElem->objectiveDistance = bias(i);
 	}
 	else
-		reduceElem->objectiveDistance = FLT_MAX;
+		reduceElem->objectiveDistance = -FLT_MAX;
 }
 
 // 1. CheckIn
@@ -236,13 +256,13 @@ void PC_bsf_MapF_3(PT_bsf_mapElem_T* mapElem, PT_bsf_reduceElem_T_3* reduceElem,
 // 0. Pseudo-pojection
 void PC_bsf_ReduceF(PT_bsf_reduceElem_T* x, PT_bsf_reduceElem_T* y, PT_bsf_reduceElem_T* z) { // z = x + y
 	if (isfinite(x->objectiveDistance) && isfinite(y->objectiveDistance))
-		z->objectiveDistance = PF_MIN(x->objectiveDistance, y->objectiveDistance);
+		z->objectiveDistance = PF_MAX(x->objectiveDistance, y->objectiveDistance);
 	else if (isfinite(x->objectiveDistance))
 		z->objectiveDistance = x->objectiveDistance;
 	else if (isfinite(y->objectiveDistance))
 		z->objectiveDistance = y->objectiveDistance;
 	else
-		z->objectiveDistance = FLT_MAX;
+		z->objectiveDistance = -FLT_MAX;
 }
 
 // 1. CheckIn
@@ -268,6 +288,10 @@ void PC_bsf_ProcessResults(
 ) {
 #ifdef PP_IMAGE_OUT
 	PD_I[parameter->k] = reduceResult->objectiveDistance;
+#endif
+#ifdef PP_RECEPTIVE_FIELD_OUT
+	PD_field[parameter->k] = new PT_float_T[PD_n];
+	G(*parameter, PD_field[parameter->k]);
 #endif
 	parameter->k += 1;
 	if (parameter->k >= PD_K) {
@@ -326,6 +350,7 @@ void PC_bsf_JobDispatcher(
 
 void PC_bsf_ParametersOutput(PT_bsf_parameter_T parameter) {
 	cout << "Problem " << PD_currentProblem << " of " << PD_problemsNumber << ", trace " << PD_currentTrace << " of " << PD_tracesNumber << endl;
+	cout << "Number of receptive points: " << PD_K << endl; 
 	cout << "Trace point: ";
 	for (int i = 0; i < PD_n; i++) {
 		cout << PD_z[i] << " ";
@@ -418,6 +443,19 @@ void PC_bsf_ProblemOutput(PT_bsf_reduceElem_T* reduceResult, int reduceCounter, 
 	fprintf(PD_stream_outFile, "\n");
 	cout << "End of writing to " << PD_outFilename << endl;
 	PD_id++;
+
+#ifdef PP_RECEPTIVE_FIELD_OUT
+	// Outpur retinas
+	if (fprintf(PD_stream_retFile, "%d\t%d\n", PD_K, PD_n) == 0)
+		cout << "Error writing to " << PD_retFilename << " on problem " << PD_currentProblem << ", trace " << PD_currentTrace << endl;
+	for (int i = 0; i < PD_K; i++) {
+		for (int j = 0; j < PD_n; j++)
+			if (fprintf(PD_stream_retFile, "%.14f\t", PD_field[i][j]) == 0)
+				cout << "Error writing to " << PD_retFilename << " on problem " << PD_currentProblem << ", trace " << PD_currentTrace << ", PD_I index" << i << endl;
+		fprintf(PD_stream_retFile, "\n");
+	}
+	cout << "End of writing to " << PD_retFilename << endl;
+#endif
 }
 
 // 1. Movement on Polytope
@@ -584,4 +622,9 @@ inline PT_float_T objectiveDistance(PT_vector_T x) {
 	subtract_Vector(temp, x);
 
 	return (PT_float_T)(dotproduct_Vector(PD_c, temp) / sqrt(dotproduct_Vector(PD_c, PD_c)));
+}
+
+inline PT_float_T bias(int i) {
+	PT_float_T result = (PT_float_T)((dotproduct_Vector(PD_A[i], PD_g) - PD_b[i]) / dotproduct_Vector(PD_A[i], PD_c)) * sqrt(dotproduct_Vector(PD_c, PD_c));
+	return result;
 }
